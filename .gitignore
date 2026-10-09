@@ -4,6 +4,7 @@ __pycache__/
 .env
 .venv/
 venv/
+.venv-*/
 
 # Project brief
 Agent_Assurance_Lab_Brief.pdf

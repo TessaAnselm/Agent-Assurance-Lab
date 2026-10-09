@@ -31,11 +31,17 @@ function setPerforming(active) {
 function setExpression(expression) {
   document.querySelectorAll(".monster-sprite, .monster-motion").forEach((monster) => { monster.dataset.expression = expression; });
 }
+function stageExpression() {
+  return stages[index]?.key === "schema_validation" ? "opening_wave" : stages[index]?.key;
+}
 function setBeat(beat) {
   document.querySelectorAll(".monster-motion").forEach((monster) => {
     if (beat) monster.dataset.beat = beat;
     else delete monster.dataset.beat;
   });
+  if (beat === "wave") setExpression("opening_wave");
+  else if (beat === "invite") setExpression("opening_follow");
+  else setExpression(stageExpression());
 }
 function clearBeats() {
   beatTimers.forEach(clearTimeout);
@@ -106,22 +112,11 @@ function speak() {
     };
     audio.onwaiting = () => { if (generation === speechGeneration) { setTalking(false); setPerforming(false); } };
     audio.onended = finish;
-    audio.onerror = () => {
-      finish();
-      if (generation === speechGeneration) $("#voice-source").textContent = "Voice clip unavailable";
-    };
-    audio.play().catch(() => {
-      finish();
-      if (generation === speechGeneration) $("#voice-source").textContent = "Click Hear again to play";
-    });
-    $("#voice-source").textContent = "Your voice / Coqui";
+    audio.onerror = finish;
+    audio.play().catch(finish);
     return;
   }
-  if (!speechAvailable) {
-    $("#voice-source").textContent = "No voice clip for this message";
-    return;
-  }
-  $("#voice-source").textContent = "Browser voice";
+  if (!speechAvailable) return;
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "en-US";
   const voices = window.speechSynthesis.getVoices();
@@ -170,7 +165,7 @@ function selectStage(nextIndex) {
   index = Math.max(0, Math.min(stages.length - 1, nextIndex));
   const stage = stages[index];
   const event = result.trace.find((entry) => entry.stage === stage.key);
-  setExpression(stage.key);
+  setExpression(stage.key === "schema_validation" ? "opening_wave" : stage.key);
   document.querySelectorAll(".station").forEach((station, i) => {
     if (i === index) station.setAttribute("aria-current", "step");
     else station.removeAttribute("aria-current");
@@ -217,7 +212,6 @@ async function init() {
         })) voiceManifest = manifest;
       }
     } catch { /* Generated voice is optional; evidence still works without it. */ }
-    $("#voice-source").textContent = voiceManifest ? "Your voice / Coqui" : "Browser voice";
     const response = await fetch("../evidence/mcp_bypass_result.json", { cache: "no-store" });
     if (!response.ok) throw new Error(`Evidence request returned HTTP ${response.status}`);
     result = await response.json();

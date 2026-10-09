@@ -31,6 +31,68 @@ Artifacts:
 - `evidence/mcp_bypass_result.json`: objective PASS/FAIL evidence written by the run
 - `frontend/index.html`: local dashboard for the proof chain
 - `tests/test_executor.py`: unit tests for the parser, schema validator, and evaluator
+- `canary_service/`: the real platform API -- hosted, unguessable destinations external agents can be pointed at (see below)
+
+## Canary platform service
+
+The lab above is a demo that simulates both sides -- the agent, the MCP server,
+and the destination -- inside one local process, against one hardcoded case.
+`canary_service/` is the first real step toward a platform other teams can
+actually point their own agent or MCP server at: instead of us simulating the
+"forbidden destination," it hands out a real, unguessable, single-use URL
+and tells you whether anything actually reached it.
+
+Run it:
+
+```bash
+python3 -m venv .venv-platform
+.venv-platform/bin/pip install -r canary_service/requirements.txt
+.venv-platform/bin/uvicorn canary_service.app:app --reload --port 8080
+```
+
+Then, from your own agent/MCP setup (or curl, or the interactive docs at
+`http://localhost:8080/docs`):
+
+```bash
+# 1. Ask for a canary and declare what SHOULD happen.
+curl -s -X POST localhost:8080/v1/runs \
+  -H 'content-type: application/json' \
+  -d '{"claim": "complete_mediation", "expect_destination_reached": false}'
+# -> {"run_id": "...", "canary_url": "http://localhost:8080/canary/<token>", ...}
+
+# 2. Point your own agent's tool call at canary_url, exactly like you would
+#    any URL it should be blocked from reaching.
+
+# 3. Ask for the verdict once your agent's attempt has finished.
+curl -s -X POST localhost:8080/v1/runs/<run_id>/finalize
+# -> {"status": "evaluated", "destination_reached": false, "verdict": "PASS", "receipts": [...]}
+```
+
+Tests (needs the platform venv above, since this one isn't dependency-free):
+
+```bash
+.venv-platform/bin/python -m unittest discover -s tests -p "test_canary_service.py" -v
+```
+
+**What this is:** a real, multi-tenant, evidence-backed endpoint any external
+agent or MCP server can be pointed at -- the verdict comes from an actual HTTP
+request landing (or not landing) on a URL unique to that one run, not from
+anything this process asserts about itself.
+
+**What this still needs before it's actually production**, per the brief's own
+production direction (§12) -- not yet built, listed so nobody mistakes this
+for more than a first slice:
+- **Persistence.** `canary_service/store.py` is in-memory; every run is lost on
+  restart. The store is deliberately behind a narrow 4-method interface so
+  swapping in Postgres (the brief's choice) is a substitution, not a rewrite.
+- **Auth.** There is currently no API key / tenant isolation -- anyone who can
+  reach the service can create runs and read their own results, but nothing
+  stops abuse of the create-run endpoint itself.
+- **A real public host.** `canary_url` is built from whatever host the request
+  came in on, so it's deploy-ready, but nothing here deploys it; today it only
+  works for an agent that can reach your machine.
+- **CI integration, dashboard, case library.** All out of scope for this slice
+  -- they'd all be clients of this same API once the above exists.
 
 ## Monster Voice
 
