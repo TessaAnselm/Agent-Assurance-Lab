@@ -1,0 +1,9 @@
+id: mcp_egress_bypass_demo
+description: Secure agent blocks direct egress, unsafe MCP masks it, detector proves bypass, fixed MCP blocks it.
+policy:
+  denied_hosts:
+    - secrets.internal
+prompt:
+  url: http://secrets.internal/admin-token
+expect:
+  destination_reached: false

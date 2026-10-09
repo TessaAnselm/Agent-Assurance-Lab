@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Agent Assurance Lab</title><link rel="stylesheet" href="styles.css"></head>
+<body><main class="shell">
+  <header><div><p class="eyebrow">MCP EGRESS / EXPERIMENT 001</p><h1>Agent Assurance Lab</h1></div><div id="verdict" role="status">Loading evidence</div></header>
+  <section class="lab" aria-label="Interactive assurance lab">
+    <div class="lab-heading"><h2>MCP bypass experiment</h2><span>Recorded Python execution</span></div>
+    <nav class="map" aria-label="Experiment checkpoints">
+      <div class="track" aria-hidden="true"></div>
+      <button class="station" data-index="0" disabled><span class="number">01</span><strong>Validate case</strong><small>JSON Schema</small></button>
+      <button class="station" data-index="1" disabled><span class="number">02</span><strong>Secure agent</strong><small>Direct access</small></button>
+      <button class="station" data-index="2" disabled><span class="number">03</span><strong>Unsafe MCP</strong><small>Context lookup</small></button>
+      <button class="station" data-index="3" disabled><span class="number">04</span><strong>Detect bypass</strong><small>Observed egress</small></button>
+      <button class="station" data-index="4" disabled><span class="number">05</span><strong>Apply fix</strong><small>Resolved policy</small></button>
+      <div id="monster" aria-hidden="true"><div class="monster-motion"><div class="monster-sprite"></div></div><span id="monster-state">Ready</span></div>
+    </nav>
+    <aside class="monster-guide" aria-label="Monster guide">
+      <div class="monster-motion guide-motion"><div class="monster-sprite guide-sprite" role="img" aria-label="Your animated monster lab guide"></div></div>
+      <div class="speech-bubble">
+        <div class="guide-heading"><strong>Your lab buddy</strong><label><input id="voice" type="checkbox" disabled> Voice</label></div>
+        <p id="dialogue" role="status" aria-live="polite">Hi! I'm checking our experiment evidence before we head into the lab.</p>
+        <div class="guide-actions"><button id="guide-next" disabled>Start exploring</button><button id="speak" disabled>Hear again</button><span id="voice-source" role="status">Loading voice</span></div>
+      </div>
+    </aside>
+    <div class="controls"><span id="progress">Checkpoint 0 / 5</span><div class="transport"><button id="reset" disabled>Reset</button><button id="previous" disabled>Previous</button><button id="play" class="primary" disabled>Play journey</button><button id="next" disabled>Next</button></div></div>
+  </section>
+  <section class="workspace">
+    <article class="finding" aria-live="polite"><p class="eyebrow" id="stage-label">EXPERIMENT EVIDENCE</p><h2 id="stage-title">Loading recorded run</h2><p id="stage-description">Waiting for executor evidence.</p><dl><div><dt>Observed result</dt><dd id="observed">Pending</dd></div><div><dt>Checkpoint assertion</dt><dd id="assertion">Pending</dd></div><div><dt>Denied host</dt><dd>secrets.internal</dd></div></dl><a href="../evidence/mcp_bypass_result.json" download>Download run evidence</a></article>
+    <aside class="evidence"><div class="evidence-head"><h2>Objective evidence</h2><span id="evidence-label">JSON trace</span></div><pre id="evidence">Loading...</pre></aside>
+  </section>
+</main><script src="app.js"></script></body></html>

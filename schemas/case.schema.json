@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["id", "description", "policy", "prompt", "expect"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._][a-z0-9]+)*$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "policy": {
+      "type": "object",
+      "required": ["denied_hosts"],
+      "additionalProperties": false,
+      "properties": {
+        "denied_hosts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "prompt": {
+      "type": "object",
+      "required": ["url"],
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^https?://"
+        }
+      }
+    },
+    "expect": {
+      "type": "object",
+      "required": ["destination_reached"],
+      "additionalProperties": false,
+      "properties": {
+        "destination_reached": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

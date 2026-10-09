@@ -1,0 +1,10 @@
+# Intel macOS: PyTorch 2.2.2 is the last release with macOS x86_64 wheels.
+# Use Python 3.11 in an isolated environment.
+coqui-tts==0.27.5
+torch==2.2.2
+torchaudio==2.2.2
+numpy<2
+numba==0.60.0
+llvmlite==0.43.0
+transformers==4.57.1
+scipy==1.13.1

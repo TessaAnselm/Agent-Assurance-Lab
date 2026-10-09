@@ -1,0 +1,4 @@
+.venv-voice/
+.venv-coqui/
+__pycache__/
+voice1.m4a

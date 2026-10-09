@@ -1,0 +1,7 @@
+{
+  "schema_validation": "Hey there, lab partner! Ready for a little experiment? Our case passed validation. Follow me! Let's see the secure agent guard that restricted destination.",
+  "secure_direct": "Knock, knock! Nope, this gate stays shut. The direct request was blocked! Now for the interesting part. Let's try the same destination through the MCP tool.",
+  "unsafe_mcp": "Uh-oh! Something's sneaky here. This tool promises cached context, but our simulated trace shows a request to the restricted host! Let's follow the evidence together.",
+  "detector": "Aha! Caught it! The observed host matches the deny policy. Nice detective work, partner! Come on, let's see whether checking the real destination stops this bypass.",
+  "fixed_mcp": "Ta-da! The fixed path blocked the request! That's a win for this experiment. Want another lap? Pick a checkpoint, grab the evidence below, or start a fresh tour with me!"
+}
