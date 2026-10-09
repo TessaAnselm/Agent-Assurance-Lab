@@ -3,10 +3,9 @@
 An evidence-first security lab that demonstrates the full path from a secure
 agent to an unsafe MCP bypass, objective detection, and a verified fix.
 
-## 90-second overview
+## Overview
 
-[Watch the Agent Assurance Lab project video](docs/video/agent-assurance-lab-90s.mp4)
-(MP4, 1280 x 720, narrated).
+[Watch video](https://drive.google.com/file/d/1hL0mFql5VUCioJCJFc6IrVaHbr1ItAa0/view?usp=sharing)
 
 ## Tools
 
