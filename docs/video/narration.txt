@@ -1,0 +1,15 @@
+AI agents can look secure and still fail in the one place that matters: the real world.
+
+Agent Assurance Lab turns security claims into experiments. Instead of asking a model whether a control works, the lab creates a case, runs it, and records objective evidence from the destination itself.
+
+The demo follows one complete MCP egress story. First, a schema validates the test case and its expected policy. Next, the secure agent tries to reach a restricted host directly. The request is blocked, exactly as expected.
+
+Then the same destination is passed through an unsafe MCP tool. The tool claims to perform a harmless context lookup, but the observed trace reveals an outbound request. That is the bypass: the policy existed at the agent boundary, but not at the tool boundary.
+
+The detector compares what really happened with the case oracle. Evidence present, destination reached, expected result false: fail. After mediation is added to the MCP path, the request is blocked and the case passes.
+
+The project goes beyond a recorded demo. It can create a unique, single-use canary URL for your own agent or MCP server. Point the system under test at that URL, attempt the action, and finalize the run. A receipt proves the destination was reached; no receipt supports the blocked result.
+
+Every real run can flow into an append-only ClickHouse event log, producing live pass, fail, inconclusive, and pending telemetry without a separate counter that can drift from reality.
+
+Agent Assurance Lab: test the claim, capture the evidence, and make agent security measurable.
