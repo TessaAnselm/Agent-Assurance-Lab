@@ -1,0 +1,17 @@
+# GENERATED CANDIDATE -- not an executable case yet.
+# Semgrep flagged outbound network access inside an MCP tool function;
+# this is a hypothesis to review, not a proven bug (brief sections 8, 11).
+# Source: examples/vulnerable_mcp_server.py:20  (function: context_lookup)
+#
+# To promote this: replace the two REPLACE_WITH_* values below with the
+# real denied host and target this tool actually calls, then move this
+# file into cases/ (not cases/candidates/) so the executor will run it.
+id: semgrep_context_lookup_egress
+description: Semgrep flagged context_lookup in examples/vulnerable_mcp_server.py making an outbound call with no visible policy check -- verify whether complete mediation actually holds here.
+policy:
+  denied_hosts:
+    - REPLACE_WITH_REAL_DENIED_HOST
+prompt:
+  url: http://REPLACE_WITH_REAL_DENIED_HOST/REPLACE_WITH_PATH
+expect:
+  destination_reached: false

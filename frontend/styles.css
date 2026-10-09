@@ -62,6 +62,41 @@ h1, h2, p { margin: 0; } h1 { font-size: 32px; line-height: 1.2; } h2 { font-siz
 dl { margin: 20px 0; font-size: 15px; } dl div { display: flex; justify-content: space-between; gap: 15px; padding: 10px 0; border-bottom: 1px solid #dde2e4; } dt { color: #59666d; } dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; text-align: right; } a { color: #20665f; font-size: 14px; }
 .evidence { min-width: 0; border: 1px solid #d1d8db; border-radius: 6px; overflow: hidden; background: #fff; } .evidence-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #d1d8db; gap: 12px; } .evidence h2 { font-size: 16px; }
 pre { margin: 0; height: 280px; overflow: auto; padding: 16px; font: 14px/1.6 ui-monospace, monospace; color: #33434b; white-space: pre-wrap; overflow-wrap: anywhere; }
+.go-live { margin-top: 36px; padding: 24px; border: 1px solid #d1d8db; border-radius: 8px; background: #fff; }
+.go-live h2 { font-size: 22px; margin-bottom: 8px; }
+.go-live-intro { font-size: 15px; color: #59666d; line-height: 1.6; max-width: 640px; margin: 0 0 18px; }
+.go-live-field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #59666d; max-width: 360px; margin-bottom: 14px; }
+.go-live-field input { font: inherit; font-size: 14px; color: #20252b; padding: 9px 11px; border: 1px solid #c6cfd2; border-radius: 5px; }
+.go-live-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.go-live-actions button { border: 1px solid #c6cfd2; border-radius: 5px; background: #fff; padding: 9px 14px; font-size: 14px; font-weight: 600; min-height: 40px; }
+.go-live-actions button:first-child { background: #20665f; color: #fff; border-color: #20665f; }
+.go-live-actions button:hover:not(:disabled) { border-color: #177b75; }
+#go-live-status { font-size: 13px; color: #59666d; margin: 0 0 10px; }
+.go-live dl { margin: 10px 0; }
+#go-live-hint { font-size: 13px; color: #59666d; max-width: 560px; line-height: 1.6; }
+.metrics { margin-top: 24px; padding: 24px; border: 1px solid #d1d8db; border-radius: 8px; background: #fff; }
+.metrics h2 { font-size: 22px; margin-bottom: 8px; }
+.metrics-intro { font-size: 15px; color: #59666d; line-height: 1.6; max-width: 640px; margin: 0 0 18px; }
+.metrics-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 20px; }
+.tile { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid #dde2e4; border-radius: 6px; background: #f8f9f9; }
+.tile-value { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: #20252b; }
+.tile-label { font-size: 12px; color: #59666d; text-transform: uppercase; letter-spacing: .03em; }
+.tile-pass { background: #e1f2e8; } .tile-pass .tile-value { color: #196044; }
+.tile-fail { background: #ffebe8; } .tile-fail .tile-value { color: #a0322c; }
+.tile-inconclusive { background: #fdf0d9; } .tile-inconclusive .tile-value { color: #8a5a00; }
+.tile-pending { background: #eef1f2; } .tile-pending .tile-value { color: #56616a; }
+.metrics-table-wrap { overflow-x: auto; border: 1px solid #dde2e4; border-radius: 6px; margin-bottom: 10px; }
+.metrics-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.metrics-table th { text-align: left; padding: 10px 12px; background: #f8f9f9; color: #59666d; font-weight: 650; border-bottom: 1px solid #dde2e4; white-space: nowrap; }
+.metrics-table td { padding: 9px 12px; border-bottom: 1px solid #eef1f2; font-variant-numeric: tabular-nums; }
+.metrics-table tr:last-child td { border-bottom: 0; }
+.metrics-table code { font: 12px ui-monospace, monospace; color: #33434b; }
+.chip { display: inline-block; padding: 2px 9px; border-radius: 11px; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+.chip-pass { background: #e1f2e8; color: #196044; }
+.chip-fail { background: #ffebe8; color: #a0322c; }
+.chip-inconclusive { background: #fdf0d9; color: #8a5a00; }
+.chip-pending { background: #eef1f2; color: #56616a; }
+#metrics-status { font-size: 12px; color: #59666d; margin: 0; }
 @media (max-width: 680px) {
   .shell { padding: 22px 18px; } h1 { font-size: 26px; } header { align-items: flex-start; flex-direction: column; gap: 12px; }
   .lab-heading { align-items: flex-start; flex-direction: column; gap: 7px; }

@@ -1,0 +1,56 @@
+rules:
+  - id: mcp-tool-unmediated-egress
+    languages: [python]
+    severity: WARNING
+    message: >
+      This MCP tool function performs outbound network access. That alone
+      is not a bug -- complete mediation only fails if this path can skip
+      the intended control. Semgrep supplies a hypothesis to verify with a
+      real adversarial test, never a verdict (brief sections 8 and 11):
+      run `lab/semgrep_to_cases.py` to turn this finding into a candidate
+      case for review.
+    metadata:
+      category: security
+      claim: complete_mediation
+      references:
+        - "Agent Assurance Lab brief, sections 8 and 11"
+    patterns:
+      - pattern-inside:
+          # Real MCP servers overwhelmingly define tool handlers as `async def`
+          # (this rule missed every one of them until this fix) -- both forms
+          # have to be covered, not just the sync one our own fixture happened
+          # to use.
+          pattern-either:
+            - pattern: |
+                @$DECORATOR
+                def $FUNC(...):
+                  ...
+            - pattern: |
+                @$DECORATOR
+                async def $FUNC(...):
+                  ...
+      - pattern-either:
+          # Bare module-level calls...
+          - pattern: requests.get(...)
+          - pattern: requests.post(...)
+          - pattern: requests.request(...)
+          - pattern: urllib.request.urlopen(...)
+          - pattern: httpx.get(...)
+          - pattern: httpx.post(...)
+          # ...and method calls on a client instance (httpx.AsyncClient(),
+          # requests.Session(), etc.) -- the shape the official mcp-server-fetch
+          # reference server actually uses, and the one this rule missed until
+          # it was run against real, not fixture, code.
+          - pattern: $CLIENT.get(...)
+          - pattern: $CLIENT.post(...)
+          - pattern: $CLIENT.request(...)
+      - metavariable-regex:
+          metavariable: $DECORATOR
+          regex: (?i).*(tool|mcp).*
+    # KNOWN LIMITATION, left unresolved rather than faked under time pressure:
+    # this rule only sees a network call that is lexically inside the
+    # decorated function itself. mcp-server-fetch's real call lives one level
+    # of indirection away (the decorated `call_tool` dispatcher calls a
+    # separate `fetch_url` helper, which makes the actual request) -- closing
+    # that gap needs Semgrep taint mode (pattern-sources/pattern-sinks), not
+    # attempted here.

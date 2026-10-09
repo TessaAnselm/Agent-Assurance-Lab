@@ -1,6 +1,30 @@
-# Agent Assurance Lab Demo
+# Agent Assurance Lab
 
-Smallest working demo for: secure -> unsafe MCP -> detected bypass -> fix.
+An evidence-first security lab that demonstrates the full path from a secure
+agent to an unsafe MCP bypass, objective detection, and a verified fix.
+
+## Project preview
+
+### Guided assurance experiment
+
+Walk through five checkpoints with a narrated lab guide and inspect the
+objective evidence produced at each stage.
+
+![Agent Assurance Lab guided MCP bypass experiment](docs/screenshots/experiment-walkthrough.png)
+
+### Test a real agent
+
+Create a single-use canary URL, point your own agent or MCP server at it, and
+check whether the supposedly blocked request actually arrived.
+
+![Create and check a real canary run](docs/screenshots/real-agent-canary.png)
+
+### Live, evidence-backed telemetry
+
+Review pass, fail, inconclusive, and pending runs from the append-only
+ClickHouse event log.
+
+![ClickHouse-backed run telemetry dashboard](docs/screenshots/clickhouse-telemetry.png)
 
 Run:
 
@@ -32,6 +56,26 @@ Artifacts:
 - `frontend/index.html`: local dashboard for the proof chain
 - `tests/test_executor.py`: unit tests for the parser, schema validator, and evaluator
 - `canary_service/`: the real platform API -- hosted, unguessable destinations external agents can be pointed at (see below)
+- `lab/semgrep_to_cases.py`: turns a Semgrep finding into a reviewed-not-run candidate case (see below)
+
+## Semgrep -> candidate cases
+
+Static analysis supplies hypotheses, never verdicts -- same trust rule the brief
+applies to an LLM (section 8). `semgrep/rules/mcp_unmediated_egress.yaml` flags
+MCP tool functions that make an outbound HTTP call; `lab/semgrep_to_cases.py`
+turns each finding into a candidate case file shaped like the real schema, but
+parked in `cases/candidates/` with placeholder values until a human fills in
+the real denied host and moves it into `cases/` -- it is never auto-run.
+
+```bash
+python3 lab/semgrep_to_cases.py                      # scans examples/ by default
+python3 lab/semgrep_to_cases.py path/to/your/mcp_server
+```
+
+`examples/vulnerable_mcp_server.py` is a small fixture with one flagged tool
+(`context_lookup`, making an unmediated `requests.get`) and one clean one
+(`list_cached_keys`, no network access) so the rule's precision is checkable
+at a glance.
 
 ## Canary platform service
 

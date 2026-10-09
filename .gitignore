@@ -6,6 +6,11 @@ __pycache__/
 venv/
 .venv-*/
 
+# Local agent and browser tooling
+.agents/
+.mcp.json
+.playwright-mcp/
+
 # Project brief
 Agent_Assurance_Lab_Brief.pdf
 
@@ -14,6 +19,12 @@ Agent_Assurance_Lab_Brief.pdf
 *.m4a
 frontend/audio/
 voice1.m4a
+
+# Ship the compact, generated monster narration used by the static frontend.
+!frontend/audio/
+frontend/audio/*
+!frontend/audio/manifest.json
+!frontend/audio/*.mp3
 
 # macOS
 .DS_Store

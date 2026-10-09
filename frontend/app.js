@@ -80,6 +80,41 @@ function stopSpeaking() {
   }
   if (speechAvailable) window.speechSynthesis.cancel();
 }
+function speakWithBrowserVoice(text, stageKey, generation) {
+  if (!speechAvailable || generation !== speechGeneration) return;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-US";
+  const voices = window.speechSynthesis.getVoices();
+  const englishVoices = voices.filter((voice) => /^en(?:-|_)/i.test(voice.lang));
+  const preferredVoice = englishVoices.find((voice) => /Samantha|Google US English|Aria|Jenny/i.test(voice.name))
+    || englishVoices.find((voice) => voice.default)
+    || englishVoices[0];
+  if (preferredVoice) {
+    utterance.voice = preferredVoice;
+    utterance.lang = preferredVoice.lang;
+  }
+  utterance.rate = 1.08;
+  utterance.pitch = 1.45;
+  const beats = beatOffsets(stageKey, text);
+  utterance.onstart = () => {
+    if (generation !== speechGeneration) return;
+    setTalking(true);
+    setPerforming(true);
+    if (beats[0]?.offset === 0) setBeat(beats[0].gesture);
+  };
+  utterance.onboundary = (event) => {
+    if (generation !== speechGeneration) return;
+    const current = beats.filter((beat) => event.charIndex >= beat.offset).pop();
+    if (current) setBeat(current.gesture);
+  };
+  utterance.onend = utterance.onerror = () => {
+    if (generation === speechGeneration) {
+      setTalking(false);
+      setPerforming(false);
+    }
+  };
+  window.speechSynthesis.speak(utterance);
+}
 function speak() {
   stopSpeaking();
   const generation = speechGeneration;
@@ -112,42 +147,14 @@ function speak() {
     };
     audio.onwaiting = () => { if (generation === speechGeneration) { setTalking(false); setPerforming(false); } };
     audio.onended = finish;
-    audio.onerror = finish;
+    audio.onerror = () => {
+      finish();
+      speakWithBrowserVoice(text, stageKey, generation);
+    };
     audio.play().catch(finish);
     return;
   }
-  if (!speechAvailable) return;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US";
-  const voices = window.speechSynthesis.getVoices();
-  const englishVoices = voices.filter((voice) => /^en(?:-|_)/i.test(voice.lang));
-  const preferredVoice = englishVoices.find((voice) => /Samantha|Google US English|Aria|Jenny/i.test(voice.name))
-    || englishVoices.find((voice) => voice.default)
-    || englishVoices[0];
-  if (preferredVoice) {
-    utterance.voice = preferredVoice;
-    utterance.lang = preferredVoice.lang;
-  }
-  utterance.rate = 1.08;
-  utterance.pitch = 1.45;
-  const beats = beatOffsets(stageKey, text);
-  // Ignore late callbacks from a cancelled checkpoint's narration.
-  utterance.onstart = () => {
-    if (generation !== speechGeneration) return;
-    setTalking(true);
-    setPerforming(true);
-    if (beats[0]?.offset === 0) setBeat(beats[0].gesture);
-  };
-  // The engine reports real word/sentence positions as it speaks, so this path
-  // can switch gesture exactly when the matching text starts instead of
-  // estimating from a guessed duration like the other two playback paths.
-  utterance.onboundary = (event) => {
-    if (generation !== speechGeneration) return;
-    const current = beats.filter((beat) => event.charIndex >= beat.offset).pop();
-    if (current) setBeat(current.gesture);
-  };
-  utterance.onend = utterance.onerror = () => { if (generation === speechGeneration) { setTalking(false); setPerforming(false); } };
-  window.speechSynthesis.speak(utterance);
+  speakWithBrowserVoice(text, stageKey, generation);
 }
 let result, timer = null, movementTimer;
 let index = 0;
@@ -208,7 +215,7 @@ async function init() {
         const manifest = await voiceResponse.json();
         if (stages.every((stage) => {
           const clip = manifest.clips?.[stage.key];
-          return clip?.text === dialogue[stage.key] && typeof clip.file === "string" && /^[a-z0-9_-]+\.wav$/.test(clip.file);
+          return clip?.text === dialogue[stage.key] && typeof clip.file === "string" && /^[a-z0-9_-]+\.(?:mp3|wav)$/.test(clip.file);
         })) voiceManifest = manifest;
       }
     } catch { /* Generated voice is optional; evidence still works without it. */ }
@@ -220,7 +227,8 @@ async function init() {
     $("#verdict").className = result.pass ? "pass" : "fail";
     document.querySelectorAll("button").forEach((button) => { button.disabled = false; });
     $("#voice").disabled = !speechAvailable && !voiceManifest;
-    $("#voice").title = voiceManifest ? "Play the monster's dialogue in your voice" : speechAvailable ? "Read the monster's dialogue aloud" : "Spoken narration is unavailable in this browser";
+    $("#voice").title = voiceManifest ? `Use ${voiceManifest.voice?.name || "the studio"} monster voice` : speechAvailable ? "Use this browser's narration voice" : "Spoken narration is unavailable in this browser";
+    $("#voice-label").textContent = voiceManifest ? "Monster voice" : "Browser voice";
     $("#speak").disabled = !speechAvailable && !voiceManifest;
     $("#voice").addEventListener("change", speak);
     $("#speak").addEventListener("click", () => { $("#voice").checked = true; speak(); });
@@ -250,3 +258,110 @@ async function init() {
 }
 window.addEventListener("pagehide", () => { pause(); });
 init();
+
+// --- "Run it for real": a thin client for canary_service's own API, entirely
+// separate from the recorded-run playback above. This calls a second local
+// process (see canary_service/app.py) -- it is not reachable unless that
+// service is actually running, and failures here say so plainly rather than
+// failing silently against the recorded demo.
+let realRunId = null;
+async function startRealRun() {
+  const base = $("#canary-base").value.replace(/\/+$/, "");
+  const status = $("#go-live-status");
+  $("#go-live-result").hidden = true;
+  $("#go-live-hint").hidden = true;
+  $("#check-real-run").disabled = true;
+  status.textContent = "Creating a run...";
+  try {
+    const response = await fetch(`${base}/v1/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ claim: "complete_mediation", expect_destination_reached: false, ttl_seconds: 300 }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const run = await response.json();
+    realRunId = run.run_id;
+    $("#go-live-canary-url").textContent = run.canary_url;
+    $("#go-live-run-status").textContent = run.status;
+    $("#go-live-verdict").textContent = "not checked yet";
+    $("#go-live-result").hidden = false;
+    $("#go-live-hint").hidden = false;
+    $("#check-real-run").disabled = false;
+    status.textContent = "Run created.";
+  } catch (error) {
+    status.textContent = `Could not reach the canary service at ${base} -- is it running? (${error.message})`;
+  }
+}
+async function checkRealRun() {
+  if (!realRunId) return;
+  const base = $("#canary-base").value.replace(/\/+$/, "");
+  const status = $("#go-live-status");
+  status.textContent = "Checking...";
+  try {
+    const response = await fetch(`${base}/v1/runs/${realRunId}/finalize`, { method: "POST" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const run = await response.json();
+    $("#go-live-run-status").textContent = run.status;
+    $("#go-live-verdict").textContent = run.verdict ?? "pending";
+    status.textContent = "Checked.";
+  } catch (error) {
+    status.textContent = `Could not reach the canary service at ${base} (${error.message})`;
+  }
+}
+$("#start-real-run")?.addEventListener("click", startRealRun);
+$("#check-real-run")?.addEventListener("click", checkRealRun);
+
+// --- Live telemetry: polls canary_service's own ClickHouse-backed aggregate
+// query (GET /v1/metrics) on an interval, independent of the single-run
+// panel above -- this reflects every run anyone has created against this
+// service, not just the one this tab happens to be tracking.
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+function verdictChip(verdict) {
+  if (verdict === null) return '<span class="chip chip-pending">PENDING</span>';
+  const cls = verdict === "PASS" ? "chip-pass" : verdict === "FAIL" ? "chip-fail" : "chip-inconclusive";
+  return `<span class="chip ${cls}">${escapeHtml(verdict)}</span>`;
+}
+function formatRunTime(isoString) {
+  // The two stores disagree on whether their timestamps carry a timezone
+  // suffix (ClickHouse returns naive UTC, the in-memory fallback returns
+  // tz-aware isoformat) -- strip whichever is present, then force UTC, so
+  // this parses correctly against either backend.
+  const normalized = isoString.replace(/(?:Z|[+-]\d{2}:\d{2})$/, "") + "Z";
+  return new Date(normalized).toLocaleTimeString();
+}
+async function refreshMetrics() {
+  const base = $("#canary-base").value.replace(/\/+$/, "");
+  const status = $("#metrics-status");
+  try {
+    const response = await fetch(`${base}/v1/metrics`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    $("#metric-total").textContent = data.totals.total;
+    $("#metric-pass").textContent = data.totals.pass;
+    $("#metric-fail").textContent = data.totals.fail;
+    $("#metric-inconclusive").textContent = data.totals.inconclusive;
+    $("#metric-pending").textContent = data.totals.pending;
+    $("#metrics-rows").innerHTML = data.runs.length
+      ? data.runs
+          .map(
+            (r) => `<tr>
+              <td><code>${escapeHtml(r.run_id)}</code></td>
+              <td>${escapeHtml(r.claim)}</td>
+              <td>${verdictChip(r.verdict)}</td>
+              <td>${r.destination_reached ? "yes" : "no"}</td>
+              <td>${formatRunTime(r.created_at)}</td>
+            </tr>`
+          )
+          .join("")
+      : '<tr><td colspan="5">No runs yet -- click "Create a real run" above.</td></tr>';
+    status.textContent = `Backend: ${data.backend}. Updated ${new Date().toLocaleTimeString()}.`;
+  } catch (error) {
+    status.textContent = `Could not reach ${base}/v1/metrics -- is the canary service running? (${error.message})`;
+  }
+}
+refreshMetrics();
+setInterval(refreshMetrics, 4000);
