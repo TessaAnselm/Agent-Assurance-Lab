@@ -1,4 +1,18 @@
-.venv-voice/
-.venv-coqui/
+.DS_Store
 __pycache__/
+*.py[cod]
+.env
+.venv/
+venv/
+
+# Project brief
+Agent_Assurance_Lab_Brief.pdf
+
+# Audio recordings and generated audio
+*.wav
+*.m4a
+frontend/audio/
 voice1.m4a
+
+# macOS
+.DS_Store
