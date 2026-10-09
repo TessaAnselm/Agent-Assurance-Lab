@@ -11,6 +11,9 @@ venv/
 .mcp.json
 .playwright-mcp/
 
+# Locally rendered showcase videos (published through an external host)
+.local-video/
+
 # Project brief
 Agent_Assurance_Lab_Brief.pdf
 

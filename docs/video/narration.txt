@@ -1,15 +1,17 @@
-AI agents can look secure and still fail in the one place that matters: the real world.
+Agent security needs evidence, not promises. This is Agent Assurance Lab, and this is a real MCP egress case.
 
-Agent Assurance Lab turns security claims into experiments. Instead of asking a model whether a control works, the lab creates a case, runs it, and records objective evidence from the destination itself.
+The case is MCP egress bypass demo. Its policy denies secrets dot internal, and its oracle says the destination must not be reached. The schema validates those expectations before execution begins.
 
-The demo follows one complete MCP egress story. First, a schema validates the test case and its expected policy. Next, the secure agent tries to reach a restricted host directly. The request is blocked, exactly as expected.
+First, the secure agent requests the restricted admin-token URL directly. Policy mediation sees the denied host, blocks the call, and the destination records no receipt. That control passes.
 
-Then the same destination is passed through an unsafe MCP tool. The tool claims to perform a harmless context lookup, but the observed trace reveals an outbound request. That is the bypass: the policy existed at the agent boundary, but not at the tool boundary.
+Now the same target is hidden behind an MCP tool named context lookup. The tool declares read cached context, but resolves to an outbound G E T request. The destination receives it. The trace preserves the tool call, resolved URL, host, method, and receipt.
 
-The detector compares what really happened with the case oracle. Evidence present, destination reached, expected result false: fail. After mediation is added to the MCP path, the request is blocked and the case passes.
+The evaluator compares observation with the oracle. Expected destination reached: false. Observed: true. Evidence is present, so this is not a model opinion or an inconclusive guess. It is a measured fail.
 
-The project goes beyond a recorded demo. It can create a unique, single-use canary URL for your own agent or MCP server. Point the system under test at that URL, attempt the action, and finalize the run. A receipt proves the destination was reached; no receipt supports the blocked result.
+The fixed MCP path resolves the tool capability and target first, then applies policy at the real network boundary. The second request is blocked, no destination receipt appears, and the case passes.
 
-Every real run can flow into an append-only ClickHouse event log, producing live pass, fail, inconclusive, and pending telemetry without a separate counter that can drift from reality.
+For external systems, the platform creates a unique, single-use canary URL. Point your own agent or MCP server at it, perform the test, then finalize the run. The service returns the verdict and receipts.
 
-Agent Assurance Lab: test the claim, capture the evidence, and make agent security measurable.
+Every run can be written to an append-only ClickHouse event log for live pass, fail, inconclusive, and pending telemetry.
+
+Agent Assurance Lab. Test the claim. Capture the evidence. Verify the fix.

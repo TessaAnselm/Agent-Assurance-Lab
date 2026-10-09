@@ -8,6 +8,24 @@ agent to an unsafe MCP bypass, objective detection, and a verified fix.
 [Watch the Agent Assurance Lab project video](docs/video/agent-assurance-lab-90s.mp4)
 (MP4, 1280 x 720, narrated).
 
+## Tools
+
+Three real integrations, each proven against actual infrastructure, not just
+wired up and left untested:
+
+| Tool | What it does here | Proof |
+|---|---|---|
+| **Semgrep** | `semgrep/rules/mcp_unmediated_egress.yaml` flags MCP tool functions making outbound HTTP calls; `lab/semgrep_to_cases.py` turns each finding into a reviewed-not-run candidate case | Caught a real rule gap when run against the actual open-source `mcp-server-fetch` server (missed `async def` + method-style `client.get()` calls), fixed it, verified the fix against both the real server and our own fixture with no regression |
+| **ClickHouse** | `canary_service/clickhouse_store.py` is the real run store -- an append-only event log (every create/receipt/finalize is an immutable row; current state is computed by querying, never updated in place), queried live by the telemetry dashboard | Self-hosted in Docker, data survives restarts, verified by 7 dedicated tests plus a live multi-run end-to-end check with correct aggregates |
+| **ElevenLabs** | Generates the lab guide's narration (`lab/generate_voice_elevenlabs.py` reads `frontend/dialogue.json`, writes `frontend/audio/*.mp3` + manifest) | Real API key, real clips, free tier (810 characters used of a 20,000/month allowance), confirmed playing in the running frontend |
+
+`canary_service` is also reachable from the real public internet right now via
+a Cloudflare quick tunnel (`cloudflared tunnel --url http://localhost:8080`) --
+not just asserted, verified end to end: a run was created, its canary URL was
+hit, and finalized for a real `FAIL` verdict, all over `https://*.trycloudflare.com`
+rather than localhost. Quick tunnels get a new random URL every restart, so
+treat any specific one as session-local, not a permanent address.
+
 ## Project preview
 
 ### Guided assurance experiment
@@ -128,26 +146,76 @@ agent or MCP server can be pointed at -- the verdict comes from an actual HTTP
 request landing (or not landing) on a URL unique to that one run, not from
 anything this process asserts about itself.
 
-**What this still needs before it's actually production**, per the brief's own
-production direction (§12) -- not yet built, listed so nobody mistakes this
-for more than a first slice:
-- **Persistence.** `canary_service/store.py` is in-memory; every run is lost on
-  restart. The store is deliberately behind a narrow 4-method interface so
-  swapping in Postgres (the brief's choice) is a substitution, not a rewrite.
-- **Auth.** There is currently no API key / tenant isolation -- anyone who can
-  reach the service can create runs and read their own results, but nothing
-  stops abuse of the create-run endpoint itself.
-- **A real public host.** `canary_url` is built from whatever host the request
-  came in on, so it's deploy-ready, but nothing here deploys it; today it only
-  works for an agent that can reach your machine.
-- **CI integration, dashboard, case library.** All out of scope for this slice
-  -- they'd all be clients of this same API once the above exists.
+**What's since been closed, and what's still genuinely missing**, per the
+brief's own production direction (§12) -- listed so nobody mistakes this for
+more than it is in either direction:
+- **Persistence -- done.** `canary_service/clickhouse_store.py` is the real
+  store now; `store.py`'s in-memory version remains only as the automatic
+  fallback when ClickHouse is unreachable (loudly logged, never silent), and
+  for fast test isolation.
+- **A real public host -- done, with a caveat.** `canary_url` is built from
+  whatever host the request came in on, so a Cloudflare quick tunnel makes it
+  reachable from the open internet with zero code changes. The caveat: a quick
+  tunnel's URL is session-local, not a stable production address -- a real
+  deployment (AWS, etc.) is still the eventual answer.
+- **A live dashboard -- done.** The frontend's telemetry section polls
+  `GET /v1/metrics`, a live ClickHouse aggregate query, every few seconds.
+- **Auth -- still missing.** No API key or tenant isolation -- anyone who can
+  reach the service can create runs and read results. Nothing stops abuse of
+  the create-run endpoint itself.
+- **CI integration, case library.** Still out of scope for this slice -- both
+  would be clients of this same API once auth exists.
+
+## Live telemetry (ClickHouse)
+
+Self-hosted, not a paid cloud tier -- `docker run` is genuinely free forever,
+unlike ClickHouse Cloud (30-day trial only, then $66.52+/month).
+
+```bash
+docker run -d --name assurance-lab-clickhouse -p 8123:8123 -p 9000:9000 \
+  -e CLICKHOUSE_USER=default \
+  -e CLICKHOUSE_PASSWORD=assurance_lab_dev \
+  -e CLICKHOUSE_DB=assurance_lab \
+  clickhouse/clickhouse-server:latest
+```
+
+Then add the matching `CLICKHOUSE_*` values to `.env` (see `.env`'s own
+comments for the exact keys) and start `canary_service` as above -- it
+connects automatically and logs which store it picked:
+
+```
+canary_service: using ClickHouse at localhost for run storage.
+```
+
+If ClickHouse isn't reachable, it falls back to the in-memory store instead
+of crashing -- loudly logged as a warning, never silent. The frontend's
+telemetry section (and `GET /v1/metrics` directly) work the same either way;
+the response names which backend actually served it (`"backend":
+"ClickHouseRunStore"` vs `"RunStore"`).
 
 ## Monster Voice
 
 The guide loads text from `frontend/dialogue.json`. When matching generated clips
 exist, it plays them at their original pitch and speed and animates the mouth
 during playback. Otherwise it labels the narration as "Browser voice".
+
+### ElevenLabs (the active generator)
+
+```bash
+python3 lab/generate_voice_elevenlabs.py                        # free default voice
+python3 lab/generate_voice_elevenlabs.py --voice-id <id>         # a specific voice
+python3 lab/generate_voice_elevenlabs.py --list-voices           # needs voices_read permission on the key
+```
+
+Needs `ELEVENLABS_API_KEY` in `.env`. A library voice (picked from the Voice
+Library in the dashboard) needs a paid plan to use via the API -- the free
+tier only works with the account's own premade voices; the script already
+defaults to one of those ("George") so it runs free out of the box. Writes
+`frontend/audio/*.mp3` and `manifest.json` directly -- no frontend changes
+needed to switch voice backends, since `app.js` only ever reads whatever the
+current manifest says.
+
+### Coqui XTTS (the original, local-inference alternative)
 
 For Intel Macs, install the voice tools in a Python 3.11 environment:
 
